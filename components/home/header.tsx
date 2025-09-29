@@ -6,6 +6,7 @@ import React from 'react'
 import { cn } from '@/lib/utils'
 import { useScroll } from 'motion/react'
 import Image from 'next/image'
+import { ModeSwitcher } from '../modeSwitcher'
 
 const menuItems = [
     { name: 'Features', href: '#link' },
@@ -81,6 +82,7 @@ export const Header = () => {
                                 </ul>
                             </div>
                             <div className="flex w-full flex-col space-y-3 sm:flex-row sm:gap-3 sm:space-y-0 md:w-fit">
+                                <ModeSwitcher />
                                 <Button
                                     asChild
                                     variant="outline"
