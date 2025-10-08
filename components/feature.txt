@@ -1,0 +1,107 @@
+import React, { useRef, useEffect } from "react";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { SplitText } from "gsap/SplitText";
+import Lenis from "lenis";
+
+// Register GSAP plugins
+gsap.registerPlugin(ScrollTrigger, SplitText);
+
+const TITLES = [
+  { text: "Discover New Music", bg: "bg-[#7C3AED]" },
+  { text: "Create Playlists", bg: "bg-[#b896f4]" },
+  { text: "Artists & Podcasts", bg: "bg-[#7C3AED]" },
+];
+
+const Feature: React.FC = () => {
+  const titleRefs = useRef<Array<HTMLDivElement | null>>([]);
+
+  useEffect(() => {
+    // Lenis + ScrollTrigger GSAP best practice pattern
+    const lenis = new Lenis();
+    function raf(time: number) {
+      lenis.raf(time * 1000);
+    }
+    lenis.on("scroll", ScrollTrigger.update);
+    gsap.ticker.add(raf);
+    gsap.ticker.lagSmoothing(0);
+
+    titleRefs.current.forEach((container, i) => {
+      if (container) {
+        // Target the h1 inside each container
+        const heading = container.querySelector("h1");
+        if (heading) {
+          const split = SplitText.create(heading, {
+            type: "chars",
+            charsClass: "char",
+          });
+
+          // Initial Y set for staggered effect
+          split.chars.forEach((char, idx) => {
+            gsap.set(char, { y: idx % 2 === 0 ? -150 : 150 });
+          });
+
+          // Animate title panels on scroll
+          ScrollTrigger.create({
+            trigger: container,
+            start: "top bottom",
+            end: "top -25%",
+            scrub: 1,
+            onUpdate: (self) => {
+              const containerInitialX = i === 0 ? -100 : 100;
+              const containerX = containerInitialX - self.progress * containerInitialX;
+              gsap.set(container, { x: `${containerX}%` });
+
+              const charCount = split.chars.length;
+              split.chars.forEach((char, charIdx) => {
+                let charStaggerIndex = charIdx === 1 ? charCount - 1 - charIdx : charIdx;
+                const charStartDelay = 0.1;
+                const charTimelinespan = 1 - charStartDelay;
+                const staggerFactor = Math.min(0.75, charTimelinespan * 0.75);
+                const delay = charStartDelay - (charStaggerIndex / charCount) * staggerFactor;
+                const duration =
+                  charTimelinespan - (staggerFactor * (charCount - 1)) / charCount;
+                const start = delay;
+
+                let charProgress = 0;
+                if (self.progress >= start) {
+                  charProgress = Math.min(1, (self.progress - start) / duration);
+                }
+                const charInitialY = charIdx % 2 === 0 ? -150 : 150;
+                const charY = charInitialY - charProgress * charInitialY;
+                gsap.set(char, { y: charY });
+              });
+            },
+          });
+        }
+      }
+    });
+
+    // GSAP ticker cleanup
+    return () => {
+      gsap.ticker.remove(raf);
+    };
+  }, []);
+
+  return (
+    <div className="font-manrope p-4">
+      <section className="relative w-full overflow-hidden text-center flex flex-col items-center min-h-screen">
+        {TITLES.map(({ text, bg }, i) => (
+          <div
+            key={i}
+            ref={el => { titleRefs.current[i] = el; }}
+            className={`h-[85svh] flex items-center w-full`}
+          >
+            <div
+              className={`relative w-full flex justify-center items-center will-change-transform h-screen ${bg}`}
+            >
+              <h1 className="split text-9xl">{text}</h1>
+            </div>
+          </div>
+        ))}
+      </section>
+    </div>
+  );
+};
+
+export default Feature;
